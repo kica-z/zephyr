@@ -1,0 +1,39 @@
+# SPDX-License-Identifier: Apache-2.0
+
+description: Emulates a flash using a disk
+
+compatible: "zephyr,disk-flash"
+
+include: base.yaml
+
+properties:
+  size:
+    type: int
+    description: flash capacity in bits
+    required: true
+  disk-name:
+    type: string
+    description: the name of the underlying disk to be used
+    required: true
+  disk-offset:
+    type: int
+    description: offset on the disk in bytes. If the offset is 10 the 10th byte will be the first one used.
+    default: 0
+  init-priority:
+    required: true
+    type: int
+    description: >
+      The APPLICATION level initialization priority of this driver. It is important, that the underlying disk has
+      already been initialized.
+  write-block-size:
+    type: int
+    description: size of a flash write block in bytes
+    default: 1
+  erase-value:
+    type: int
+    description: byte value which should be used for erasing (range 0-255)
+    default: 0xFF
+  page-size:
+    type: int
+    description: size of a flash page in bytes
+    default: 4096

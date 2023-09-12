@@ -1,0 +1,18 @@
+/*
+ * Copyright (c) 2022-2023 Nordic Semiconductor ASA
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+ / { 
+	disk_flash_example: disk_flash_example {
+		compatible = "zephyr,disk-flash";
+		status = "okay";
+		size = <4096>;
+		init-priority = <45>;
+		disk-offset = <512>;
+		write-block-size = <1>;
+		page-size = <4096>;
+		disk-name = "DISK1";
+	};
+};

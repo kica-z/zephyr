@@ -1,0 +1,11 @@
+sample:
+  name: Disk Flash Sample
+tests:
+  sample.drivers.flash_disk:
+    tags:
+    - flash
+    harness: console
+    harness_config:
+      type: one_line
+      regex:
+        - ".*Read/Write test successfull"
