@@ -4,8 +4,9 @@ tests:
   sample.drivers.flash_disk:
     tags:
     - flash
+    filter: CONFIG_FLASH_HAS_DRIVER_ENABLED
     harness: console
     harness_config:
       type: one_line
       regex:
-        - ".*Read/Write test successfull"
+      - ".*Read/Write test successful"

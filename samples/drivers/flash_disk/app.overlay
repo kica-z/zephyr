@@ -9,10 +9,12 @@
 		compatible = "zephyr,disk-flash";
 		status = "okay";
 		size = <4096>;
+		init-level = "APPLICATION";
 		init-priority = <45>;
-		disk-offset = <512>;
 		write-block-size = <1>;
 		page-size = <4096>;
 		disk-name = "DISK1";
+		disk-sector-size = <512>;
+		disk-offset = <512>;
 	};
 };

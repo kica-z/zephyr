@@ -15,15 +15,27 @@ properties:
     type: string
     description: the name of the underlying disk to be used
     required: true
+  disk-sector-size:
+    type: int
+    description: the sector size in byte of the underlying disk to be used
+    required: true
   disk-offset:
     type: int
-    description: offset on the disk in bytes. If the offset is 10 the 10th byte will be the first one used.
+    description: >
+      offset on the disk in bytes. If the offset is 10 the 10th byte will
+      be the first one used.
     default: 0
+  init-level:
+    type: string
+    description: >
+      The initialization level of this driver. It is important, that the underlying disk has
+      already been initialized.
+    default: "APPLICATION"
   init-priority:
     required: true
     type: int
     description: >
-      The APPLICATION level initialization priority of this driver. It is important, that the underlying disk has
+      The initialization priority of this driver. It is important, that the underlying disk has
       already been initialized.
   write-block-size:
     type: int

@@ -3,18 +3,9 @@
 # Copyright (c) 2023 Endress+Hauser AG
 # SPDX-License-Identifier: Apache-2.0
 
-menuconfig FLASH_DISK
+config FLASH_DISK
 	bool "Disk flash emulator"
 	default n
 	select FLASH_HAS_DRIVER_ENABLED
 	help
 	  Enable the disk flash emulator
-
-if FLASH_DISK
-
-config FLASH_DISK_BUFFER_SIZE
-	int "Minimum read time (µS)"
-	default 0
-
-endif # FLASH_DISK
-

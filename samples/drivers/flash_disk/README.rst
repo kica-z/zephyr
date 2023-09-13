@@ -29,5 +29,6 @@ Sample Output
 -------------
 
 .. code-block:: console
+
     *** Booting Zephyr OS build 4d678207b778 ***
     [00:00:00.000,000] <inf> main: Read/Write test successfull

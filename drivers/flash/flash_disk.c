@@ -13,13 +13,12 @@
 #include <zephyr/drivers/flash.h>
 #include <zephyr/drivers/disk.h>
 
-/* TODO Malloc? Is unecessarily big depending on use case */
-BUILD_ASSERT(CONFIG_FLASH_DISK_BUFFER_SIZE > 0, "CONFIG_FLASH_DISK_BUFFER_SIZE needs to be > 0");
 LOG_MODULE_REGISTER(disk_flash, CONFIG_FLASH_LOG_LEVEL);
 
 struct flash_disk_dev_data {
 	struct k_sem sem;
-	char buf[CONFIG_FLASH_DISK_BUFFER_SIZE];
+	char *const buf;
+	uint16_t const bufsize;
 	uint32_t disk_total_sector_cnt;
 	uint32_t disk_sector_size;
 };
@@ -27,9 +26,7 @@ struct flash_disk_dev_data {
 struct flash_disk_dev_config {
 	int flash_size;
 	struct flash_parameters flash_parameters;
-#if defined(CONFIG_FLASH_PAGE_LAYOUT)
-	struct flash_pages_layout flash_pages_layout;
-#endif
+	IF_ENABLED(CONFIG_FLASH_PAGE_LAYOUT, (struct flash_pages_layout flash_pages_layout;))
 	char disk_name[Z_DEVICE_MAX_NAME_LEN];
 	int disk_offset;
 };
@@ -39,15 +36,16 @@ static void release_device(const struct device *dev);
 
 static int flash_disk_init(const struct device *dev)
 {
+	LOG_DBG("%s called", __func__);
 	struct flash_disk_dev_data *data = dev->data;
 	const struct flash_disk_dev_config *cfg = dev->config;
-	LOG_DBG("flash_disk_init called");
 
 	if (IS_ENABLED(CONFIG_MULTITHREADING)) {
 		k_sem_init(&data->sem, 1, K_SEM_MAX_LIMIT);
 	}
 
 	int res = disk_access_init(cfg->disk_name);
+
 	if (res != 0) {
 		LOG_ERR("init disk failed: %d", res);
 		return -EINVAL;
@@ -67,7 +65,7 @@ static int flash_disk_init(const struct device *dev)
 		return -EINVAL;
 	}
 
-	if (data->disk_sector_size > sizeof(data->buf)) {
+	if (data->disk_sector_size > data->bufsize) {
 		LOG_ERR("sector size %u of disk to big for buffer %u", data->disk_sector_size,
 			(uint32_t)sizeof(data->buf));
 		return -EINVAL;
@@ -83,9 +81,9 @@ static int flash_disk_init(const struct device *dev)
 
 static int flash_disk_read(const struct device *dev, off_t offset, void *dst, size_t len)
 {
-	int ret = 0;
+	LOG_DBG("%s called", __func__);
 	acquire_device(dev);
-	LOG_DBG("flash_disk_read called");
+	int ret = 0;
 	char *dstBuf = (char *)dst;
 	struct flash_disk_dev_data *data = dev->data;
 	const struct flash_disk_dev_config *cfg = dev->config;
@@ -126,12 +124,13 @@ release_device:
 
 static int flash_disk_write(const struct device *dev, off_t offset, const void *src, size_t len)
 {
-	int ret = 0;
+	LOG_DBG("%s called", __func__);
 	acquire_device(dev);
-	LOG_DBG("flash_disk_write called");
+	int ret = 0;
 	const char *srcBuf = (const char *)src;
 	struct flash_disk_dev_data *data = dev->data;
 	const struct flash_disk_dev_config *cfg = dev->config;
+
 	if (data->disk_sector_size == 0) {
 		ret = -EINVAL;
 		goto release_device;
@@ -173,9 +172,9 @@ release_device:
 
 static int flash_disk_erase(const struct device *dev, off_t offset, size_t size)
 {
-	int ret = 0;
+	LOG_DBG("%s called", __func__);
 	acquire_device(dev);
-	LOG_DBG("flash_disk_erase called");
+	int ret = 0;
 	struct flash_disk_dev_data *data = dev->data;
 	const struct flash_disk_dev_config *cfg = dev->config;
 
@@ -222,7 +221,7 @@ release_device:
 static void flash_disk_pages_layout(const struct device *dev,
 				    const struct flash_pages_layout **layout, size_t *layout_size)
 {
-	LOG_DBG("flash_disk_pages_layout called");
+	LOG_DBG("%s called", __func__);
 	const struct flash_disk_dev_config *cfg = dev->config;
 
 	*layout = &cfg->flash_pages_layout;
@@ -233,7 +232,7 @@ static void flash_disk_pages_layout(const struct device *dev,
 
 static const struct flash_parameters *flash_disk_get_parameters(const struct device *dev)
 {
-	LOG_DBG("flash_disk_get_parameters called");
+	LOG_DBG("%s called", __func__);
 	const struct flash_disk_dev_config *cfg = dev->config;
 	return &cfg->flash_parameters;
 }
@@ -274,71 +273,40 @@ static void release_device(const struct device *dev)
 }
 
 /* clang-format off */
-#if defined(CONFIG_FLASH_PAGE_LAYOUT)
-#define DISK_FLASH_DEFINE(index)                                                            \
-	static struct flash_disk_dev_data disk_flash_data_##index;                              \
-                                                                                            \
-    BUILD_ASSERT(                                                                           \
-        DT_INST_PROP(index, size) > 0, "flash_size needs to be > 0");                       \
-    BUILD_ASSERT(                                                                           \
-        DT_INST_PROP(index, write_block_size) > 0, "write_block_size needs to be > 0");     \
-    BUILD_ASSERT(                                                                           \
-        DT_INST_PROP(index, erase_value) > 0 && DT_INST_PROP(index, erase_value) <= 0xFF,   \
-        "erase_value has to be between 0x00 and 0xFF");                                     \
-    BUILD_ASSERT(                                                                           \
-        DT_INST_PROP(index, page_size) > 0, "pages_size needs to be > 0");                  \
-    BUILD_ASSERT(                                                                           \
-        DT_INST_PROP(index, disk_offset) >= 0, "disk_offset needs to be >= 0");             \
-    static const struct flash_disk_dev_config disk_flash_config_##index = {                 \
-        .flash_size = DT_INST_PROP(index, size),                                            \
-        .flash_parameters = {                                                               \
-            .write_block_size = DT_INST_PROP(index, write_block_size),                      \
-            .erase_value = DT_INST_PROP(index, erase_value),                                \
-        },                                                                                  \
-        .flash_pages_layout = {                                                             \
-            .pages_size = DT_INST_PROP(index, page_size),                                   \
-            .pages_count = (DT_INST_PROP(index, size) / 8) / DT_INST_PROP(index, page_size),\
-        },                                                                                  \
-        .disk_name = DT_INST_PROP(index, disk_name),                                        \
-        .disk_offset = DT_INST_PROP(index, disk_offset),                                    \
-    };                                                                                      \
-                                                                                            \
-    BUILD_ASSERT(                                                                           \
-        DT_INST_PROP(index, init_priority) >= 0, "init_priority needs to be >= 0");         \
-    DEVICE_DT_INST_DEFINE(index, &flash_disk_init, NULL,                                    \
-            &disk_flash_data_##index, &disk_flash_config_##index,                           \
-            APPLICATION, DT_INST_PROP(index, init_priority),                                \
-            &disk_flash_api);
-#else
-#define DISK_FLASH_DEFINE(index)                                                            \
-	static struct flash_disk_dev_data disk_flash_data_##index;                              \
-                                                                                            \
-    BUILD_ASSERT(                                                                           \
-        DT_INST_PROP(index, size) > 0, "flash_size needs to be > 0");                       \
-    BUILD_ASSERT(                                                                           \
-        DT_INST_PROP(index, write_block_size) > 0, "write_block_size needs to be > 0");     \
-    BUILD_ASSERT(                                                                           \
-        DT_INST_PROP(index, erase_value) > 0 && DT_INST_PROP(index, erase_value) <= 0xFF,   \
-        "erase_value has to be between 0x00 and 0xFF");                                     \
-    BUILD_ASSERT(                                                                           \
-        DT_INST_PROP(index, disk_offset) >= 0, "disk_offset needs to be >= 0");             \
-    static const struct flash_disk_dev_config disk_flash_config_##index = {                 \
-        .flash_size = DT_INST_PROP(index, size),                                            \
-        .flash_parameters = {                                                               \
-            .write_block_size = DT_INST_PROP(index, write_block_size),                      \
-            .erase_value = DT_INST_PROP(index, erase_value),                                \
-        },                                                                                  \
-        .disk_name = DT_INST_PROP(index, disk_name),                                        \
-        .disk_offset = DT_INST_PROP(index, disk_offset),                                    \
-    };                                                                                      \
-                                                                                            \
-    BUILD_ASSERT(                                                                           \
-        DT_INST_PROP(index, init_priority) >= 0, "init_priority needs to be >= 0");         \
-    DEVICE_DT_INST_DEFINE(index, &flash_disk_init, NULL,                                    \
-            &disk_flash_data_##index, &disk_flash_config_##index,                           \
-            APPLICATION, DT_INST_PROP(index, init_priority),                                \
-            &disk_flash_api);
-#endif /* CONFIG_FLASH_PAGE_LAYOUT */
+#define DISK_FLASH_DEFINE(index) \
+	char buf_##index[DT_INST_PROP(index, disk_sector_size)]; \
+	static struct flash_disk_dev_data disk_flash_data_##index = { \
+		.buf = buf_##index, \
+		.bufsize = sizeof(buf_##index), \
+	}; \
+\
+	BUILD_ASSERT(DT_INST_PROP(index, size) > 0, "flash_size needs to be > 0"); \
+	BUILD_ASSERT(DT_INST_PROP(index, write_block_size) > 0, \
+		     "write_block_size needs to be > 0"); \
+	BUILD_ASSERT(DT_INST_PROP(index, erase_value) > 0 && \
+			     DT_INST_PROP(index, erase_value) <= 0xFF, \
+		     "erase_value has to be between 0x00 and 0xFF"); \
+	BUILD_ASSERT(DT_INST_PROP(index, disk_offset) >= 0, "disk_offset needs to be >= 0"); \
+	static const struct flash_disk_dev_config disk_flash_config_##index = { \
+		.flash_size = DT_INST_PROP(index, size), \
+		IF_ENABLED( \
+			CONFIG_FLASH_PAGE_LAYOUT, \
+			(.flash_parameters = \
+				{ \
+					.write_block_size = DT_INST_PROP(index, write_block_size), \
+					.erase_value = DT_INST_PROP(index, erase_value) \
+				}, \
+			) \
+		) \
+		.disk_name = DT_INST_PROP(index, disk_name), \
+		.disk_offset = DT_INST_PROP(index, disk_offset), \
+	}; \
+\
+	BUILD_ASSERT(DT_INST_PROP(index, init_priority) >= 0, "init_priority needs to be >= 0"); \
+	DEVICE_DT_INST_DEFINE(index, &flash_disk_init, NULL, &disk_flash_data_##index, \
+			      &disk_flash_config_##index, \
+			      DT_STRING_TOKEN(DT_DRV_INST(index), init_level), \
+			      DT_INST_PROP(index, init_priority), &disk_flash_api);
 /* clang-format on */
 
 DT_INST_FOREACH_STATUS_OKAY(DISK_FLASH_DEFINE)

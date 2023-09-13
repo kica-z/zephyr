@@ -20,6 +20,7 @@ LOG_MODULE_REGISTER(main, CONFIG_LOG_DEFAULT_LEVEL);
 
 int main(void)
 {
+	int res = 0;
 	const struct device *const dev = DEVICE_DT_GET(FLASH_NODE);
 
 	if (!device_is_ready(dev)) {
@@ -30,7 +31,7 @@ int main(void)
 	char testWrite[] = "This was written to flash_disk.";
 	char testRead[sizeof(testWrite)];
 
-	int res = flash_write(dev, (off_t)20, testWrite, strlen(testWrite));
+	res = flash_write(dev, (off_t)20, testWrite, strlen(testWrite));
 	if (res != 0) {
 		LOG_ERR("Flash write failed");
 	}
@@ -43,7 +44,7 @@ int main(void)
 	if (strcmp(testWrite, testRead) != 0) {
 		LOG_ERR("Flash read return wrong data: \"%s\" != \"%s\"", testWrite, testRead);
 	} else {
-		LOG_INF("Read/Write test successfull");
+		LOG_INF("Read/Write test successful");
 	}
 
 	return 0;
