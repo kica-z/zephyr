@@ -31,7 +31,7 @@ int main(void)
 	char testWrite[] = "This was written to flash_disk.";
 	char testRead[sizeof(testWrite)];
 
-	res = flash_write(dev, (off_t)20, testWrite, strlen(testWrite));
+	res = flash_write(dev, (off_t)20, testWrite, sizeof(testWrite));
 	if (res != 0) {
 		LOG_ERR("Flash write failed");
 	}

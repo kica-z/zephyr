@@ -3,9 +3,11 @@
 # Copyright (c) 2023 Endress+Hauser AG
 # SPDX-License-Identifier: Apache-2.0
 
-config FLASH_DISK
-	bool "Disk flash emulator"
+config FLASH_DRIVER_DISK
+	bool "Use the flash on disk emulator"
 	default n
 	select FLASH_HAS_DRIVER_ENABLED
 	help
-	  Enable the disk flash emulator
+	  This option enables the flash on disk emulator
+	  which can be used to emulate a flash on a disk
+	  device like sd-card or ramdisk.
