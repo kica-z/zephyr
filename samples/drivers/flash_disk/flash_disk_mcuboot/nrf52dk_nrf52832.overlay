@@ -4,13 +4,25 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
- /delete-node/ &slot1_partition;
+/delete-node/ &slot1_partition;
+/delete-node/ &storage_partition;
+
+&flash0 {
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		storage_partition: partition@43000 {
+			label = "storage";
+			reg = <0x00043000 0x3D000>;
+		};
+	};
+};
+ 
+ ///delete-node/ &slot1_partition;
  
  / { 
-	chosen {
-		zephyr,code-partition = &slot0_partition;
-	};
-	
 	disk_on_flash: disk_on_flash {
 		compatible = "zephyr,flash-disk";
 		status = "okay";
@@ -21,14 +33,14 @@
 	disk_flash_example: disk_flash_example {
 		compatible = "zephyr,disk-flash";
 		status = "okay";
-		size = <4096>;
+		size = <1802240>;
 		init-level = "APPLICATION";
 		init-priority = <90>;
 		write-block-size = <1>;
 		page-size = <4096>;
 		disk-name = "DISK1";
-		disk-sector-size = <512>;
-		disk-offset = <512>;
+		disk-sector-size = <4096>;
+		disk-offset = <0>;
 
 		partitions {
 			compatible = "fixed-partitions";

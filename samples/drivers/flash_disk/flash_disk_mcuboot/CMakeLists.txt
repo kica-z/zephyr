@@ -16,13 +16,21 @@ endif()
 
 target_sources(app PRIVATE ${app_sources})
 
+set(SECONDARY_IMAGE_HEX ${CMAKE_CURRENT_SOURCE_DIR}/generated/secondary.hex)
 if(IMAGE_SECONDARY)
 message("Secondary image")
-message(${CMAKE_CURRENT_SOURCE_DIR}/secondary.hex)
-add_custom_command(TARGET app POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/zephyr/zephyr.hex ${CMAKE_CURRENT_SOURCE_DIR}/generated/secondary.hex
+set(ZEPHYR_OUTPUT_HEX ${CMAKE_CURRENT_BINARY_DIR}/zephyr/${KERNEL_HEX_NAME})
+add_custom_command(
+    COMMAND ${CMAKE_COMMAND} -E copy ${ZEPHYR_OUTPUT_HEX} ${SECONDARY_IMAGE_HEX}
+    OUTPUT  ${SECONDARY_IMAGE_HEX}
+    DEPENDS ${ZEPHYR_OUTPUT_HEX}
+    COMMENT "Running post-build copying step..."
+)
+add_custom_target(
+    post_bin ALL
+    DEPENDS ${SECONDARY_IMAGE_HEX}
 )
 else()
 set(gen_dir ${ZEPHYR_BINARY_DIR}/include/generated/)
-generate_inc_file_for_target(app ${CMAKE_CURRENT_SOURCE_DIR}/generated/secondary.hex ${gen_dir}/secondary.inc)
+generate_inc_file_for_target(app ${SECONDARY_IMAGE_HEX} ${gen_dir}/secondary.inc)
 endif()
