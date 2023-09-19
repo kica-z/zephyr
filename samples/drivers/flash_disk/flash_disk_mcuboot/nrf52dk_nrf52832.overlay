@@ -39,7 +39,7 @@
 		write-block-size = <1>;
 		page-size = <4096>;
 		disk-name = "DISK1";
-		disk-sector-size = <4096>;
+		disk-sector-size = <512>;
 		disk-offset = <0>;
 
 		partitions {
