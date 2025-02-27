@@ -559,7 +559,6 @@ static const struct fs_file_system_t fatfs_fs = {
 
 #define DT_DRV_COMPAT zephyr_fstab_fatfs
 
-#ifdef CONFIG_FS_FATFS_FSTAB_AUTOMOUNT
 #define DEFINE_FS(inst)                                                                            \
 	BUILD_ASSERT(DT_INST_PROP(inst, disk_access), "FATFS needs disk-access");                  \
 	BUILD_ASSERT(!DT_INST_PROP(inst, read_only),                                               \
@@ -567,7 +566,7 @@ static const struct fs_file_system_t fatfs_fs = {
 	BUILD_ASSERT(!DT_INST_PROP(inst, no_format),                                               \
 		     "NO_FORMAT not supported for individual instanzes FS_FATFS_MKFS");            \
 	static FATFS fs_data_##inst;                                                               \
-	static struct fs_mount_t FS_FSTAB_ENTRY(DT_DRV_INST(inst)) = {                             \
+	struct fs_mount_t FS_FSTAB_ENTRY(DT_DRV_INST(inst)) = {                                    \
 		.type = FS_FATFS,                                                                  \
 		.mnt_point = DT_INST_PROP(inst, mount_point),                                      \
 		.fs_data = &fs_data_##inst,                                                        \
@@ -577,6 +576,7 @@ static const struct fs_file_system_t fatfs_fs = {
 
 DT_INST_FOREACH_STATUS_OKAY(DEFINE_FS);
 
+#ifdef CONFIG_FS_FATFS_FSTAB_AUTOMOUNT
 #define REFERENCE_MOUNT(inst) (&FS_FSTAB_ENTRY(DT_DRV_INST(inst))),
 
 static void automount_if_enabled(struct fs_mount_t *mountp)
